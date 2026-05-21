@@ -19,8 +19,8 @@
 <script>
     $(frm).on("submit", function(e){
         e.preventDefault();
-        const scode=$(frm.scode).val();
-        const pass=$(frm.pass).val();
+        const scode=$(frm.scode).val().trim();
+        const pass=$(frm.pass).val().trim();
         if(scode=="" || pass==""){
             alert("학번과 비밀번호는 꼭 입력하셔야합니다.");
         }else{
@@ -30,16 +30,23 @@
                 url:"/users/login",
                 data:{scode, pass},
                 success:function(data){
-                    console.log(data.PASS);
-                    if(!data){
+                    if(!data || data === ""){
                         alert("존재하지 않는 학번입니다.");
                         $(frm.scode).focus();
-                    }else if(data.PASS!=pass){
-                        alert("비밀번호가 일치하지 않습니다.");
+                        return;
+                    }
+                    
+                    console.log("DB 데이터:", data);
+                  
+                    const dbPass = (data.PASS || data.PW || data.PASSWORD || data.pass || "").toString().trim();
+                    if(dbPass === ""){
+                        alert("해당 학생의 비밀번호가 DB에 설정되어 있지 않습니다.");
+                    }else if(pass != dbPass){
+                        alert("비밀번호 불일치!\n내 입력값: [" + pass + "]\nDB 저장값: [" + dbPass + "]");
                         $(frm.pass).focus();
                     }else{
-                        sessionStorage.setItem("sname", data.SNAME);
-                        sessionStorage.setItem("scode", data.SCODE);
+                        sessionStorage.setItem("sname", data.SNAME || data.sname);
+                        sessionStorage.setItem("scode", data.SCODE || data.scode);
                         location.href="/";
                     }
                 }

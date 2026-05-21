@@ -19,6 +19,7 @@ router.post('/login', async function(req, res){
         con = await getConnection();
         let sql = "select * from students where scode=:scode";
         let result=await con.execute(sql, {scode}, {outFormat:OracleDB.OUT_FORMAT_OBJECT});
+        console.log("DB 조회 결과:", result.rows[0]); // 어떤 컬럼들이 가져와지는지 확인
         res.send(result.rows[0]);
     }catch(err){
         console.log(err);

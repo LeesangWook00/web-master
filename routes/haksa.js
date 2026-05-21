@@ -138,8 +138,8 @@ router.post('/stu/insert', async function(req, res){
     let con;
     try{
         con = await getConnection();
-        sql = "insert into students(scode, sname, dept, birthday, year, advisor)";
-        sql +=" values(:scode, :sname, :dept, to_date(:birthday, 'YYYY-MM-DD'), :year, :pcode)";
+        sql = "insert into students(scode, sname, dept, birthday, year, advisor, pass)";
+        sql +=" values(:scode, :sname, :dept, to_date(:birthday, 'YYYY-MM-DD'), :year, :pcode, '1234')";
         console.log(sql);
         await con.execute(sql, {scode, sname, dept, birthday, year, pcode}, {autoCommit:true});
         res.sendStatus(200);

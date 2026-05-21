@@ -12,9 +12,9 @@ async function getConnection(){
     let connection;
     try{
         connection = await oracledb.getConnection({
-            user:'user107',
+            user:'USER107',
             password:'pass',
-            connectionString:'localhost/xe'
+            connectionString:'localhost/xepdb1'
         });
         console.log('oracle DB 연결성공');
         return connection;
