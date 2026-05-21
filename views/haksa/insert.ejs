@@ -1,0 +1,51 @@
+<div class="my-5">
+    <h1 class="text-center mb-5">학생등록</h1>
+    <div class="row justify-content-center">
+        <div class="col-10 col-md-8 col-lg-6">
+            <form name="frm">
+                <div class="input-group mb-3">
+                    <span class="input-group-text">학생학번</span>
+                    <input class="form-control" name="scode">
+                </div>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">학생이름</span>
+                    <input class="form-control" name="sname">
+                </div>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">소속학과</span>
+                    <input class="form-control" name="dept">
+                </div>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">지도교수</span>
+                    <input class="form-control" name="pcode">
+                </div>
+                <div class="text-center mt-3">
+                    <button class="btn btn-primary px-5" type="submit">등록</button>
+                    <button class="btn btn-secondary px-5" type="reset">취소</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(frm).on("submit", function (e) {
+        e.preventDefault(); // 기본 폼 전송 방식(새로고침) 방지
+        
+        if (confirm("학생 정보를 등록하시겠습니까?")) {
+            $.ajax({
+                type: "post",
+                url: "/haksa/stu/insert",
+                data: $(frm).serialize(), // 폼 안의 데이터(name 속성 기준)를 한 번에 전송
+                success: function (data) {
+                    alert("학생 등록이 완료되었습니다!");
+                    location.href = "/haksa/stu"; // 목록 페이지로 돌아가기
+                },
+                error: function (xhr) {
+                    console.error(xhr.responseText);
+                    alert("등록 실패! 터미널 창(VS Code)의 에러 메시지를 확인해 주세요.");
+                }
+            });
+        }
+    });
+</script>

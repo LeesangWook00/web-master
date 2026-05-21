@@ -1,0 +1,59 @@
+<div class="my-5">
+    <h1 class="text-center mb-5">게시글</h1>
+    <table id="tbl" class="table table-striped table-hover"></table>
+    <div class="text-center">
+        <button class="btn btn-primary btn-sm px-3" id="prev">이전</button>
+        <span id="page" class="mx-3"></span>
+        <button class="btn btn-primary btn-sm px-3" id="next">다음</button>
+    </div>
+    <script id="temp" type="text/x-handlebars-template">
+        <tbody>
+        {{#each .}}
+        <tr>
+            <td>{{ID}}</td>
+            <td>{{TITLE}}</td>
+            <td>{{SNAME}}({{WRITER}})</td>
+            <td class="text-end">{{FMT_DATE}}</td>
+         </tr>
+        {{/each}}
+        </tbody>
+    </script>
+</div>
+<script>
+    let page=1;
+    let size=5;
+    getList();
+
+    $("#next").on("click", function(){
+        page++;
+        getList();
+    });
+
+    $("#prev").on("click", function(){
+        page--;
+        getList();
+    });
+
+    function getList(){
+        console.log(page, size);
+        $.ajax({
+            type:"get",
+            url:"/posts/list.json",
+            data:{page, size},
+            success:function(data) {
+                console.log(data);
+                const temp = Handlebars.compile($("#temp").html());
+                $("#tbl").html(temp(data.list));
+                const last = Math.ceil(data.total/size);
+                $("#page").html(`${page}/${last}`);
+
+                //1페이지에서 이전 버튼을 클릭한 경우
+                if(page==1) $("#prev").attr("disabled", true); 
+                else  $("#prev").attr("disabled", false);
+                //마지막 페에지에서 다음 버튼을 클릭한 경우
+                if(page==last) $("#next").attr("disabled", true); 
+                else  $("#next").attr("disabled", false);
+            }
+        })
+    }
+</script>

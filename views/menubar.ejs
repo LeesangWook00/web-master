@@ -1,0 +1,68 @@
+<nav class="navbar navbar-expand-lg shadow" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);" data-bs-theme="dark">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold" href="/">🎓 학사관리시스템</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" aria-current="page" href="/">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/haksa/pro">교수관리</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/haksa/stu">학생관리</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/haksa/cou">강좌관리</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/posts">게시글</a>
+                </li>
+            </ul>
+            <ul class="navbar-nav before">
+                <li class="nav-item">
+                    <a class="nav-link active" href="/users/login">로그인</a>
+                </li>
+            </ul>
+            <ul class="navbar-nav after">
+                <li class="nav-item">
+                    <a class="nav-link sname active" href="#"></a>
+                </li>                
+                <li class="nav-item">
+                    <a class="nav-link logout active" href="#">로그아웃</a>
+                </li>
+            </ul>            
+        </div>
+    </div>
+</nav>
+<script>
+    $(".logout").on("click", function(e){
+        e.preventDefault();
+        if(confirm("정말로 로그아웃하실래요?")){
+            sessionStorage.clear();
+            location.href='/';
+        }
+    })
+
+    const sname=sessionStorage.getItem("sname");
+    const scode=sessionStorage.getItem("scode");
+    if(sname){
+        $(".before").hide();
+        $(".after").show();
+        $(".sname").html(`${sname}(${scode})`);
+    }else{
+        $(".before").show();
+        $(".after").hide();
+    }
+
+    // $(document).ready(function(){
+    //     const pathname=window.location.pathname;
+    //     const path=pathname.split('/').slice(0, 3).join('/');
+    //     $(".nav-link").removeClass('active');
+    //     $(`.nav-link[href='${path}']`).addClass('active');
+    // });
+</script>

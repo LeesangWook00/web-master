@@ -1,0 +1,54 @@
+<div class="my-5">
+    <h1 class="text-center">학생관리</h1>
+    <div class="text-end mb-2">
+        <a class="btn btn-primary px-5" href="/haksa/stu/insert">학생등록</a>
+    </div>
+    <table id="tbl_students" class="table table-striped table-hover"></table>
+    <script id="temp_students" type="text/x-handlebars-template">
+        <tbody>
+        {{#each .}}
+        <tr>
+            <td>{{SCODE}}</td><td>{{SNAME}}</td><td>{{DEPT}}</td>
+            <td>{{FDATE}}</td><td>{{PNAME}}</td>
+            <td class="text-end"><button class="btn btn-outline-danger btn-sm delete" scode="{{SCODE}}">삭제</button></td>
+        </tr>
+        {{/each}}
+        </tbody>
+    </script>
+</div>
+<script>
+    getList();
+    function getList() {
+        $.ajax({
+            type:"get",
+            url:"/haksa/stu/list.json",
+            success:function(data){
+                console.log(data);
+                const temp=Handlebars.compile($("#temp_students").html());
+                $("#tbl_students").html(temp(data));
+            },
+            error:function(xhr){
+                console.error(xhr.responseText);
+                alert("데이터 로딩 실패! VS Code 하단의 터미널 창을 확인해 주세요.");
+            }
+        });
+    }
+
+    $("#tbl_students").on("click", ".delete", function(){
+        const scode=$(this).attr("scode");
+        if(confirm(scode + "번 학생를 정말로 삭제하실래요?")){
+            $.ajax({
+                type:"post",
+                url:"/haksa/stu/delete",
+                data:{scode},
+                success:function(data){
+                    alert('삭제완료!');
+                    location.href='/haksa/stu';
+                },
+                error:function(){
+                    alert('삭제실패!');
+                }
+            });
+        }
+    });
+</script>

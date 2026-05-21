@@ -1,0 +1,50 @@
+<div class="my-5">
+    <h1 class="text-center">교수관리</h1>
+    <div class="text-end mb-2">
+        <a class="btn btn-primary px-5" href="/haksa/pro/insert">교수등록</a>
+    </div>
+    <table id="tbl_professors" class="table table-striped table-hover"></table>
+    <script id="temp_professors" type="text/x-handlebars-template">
+        <tbody>
+        {{#each .}}
+        <tr>
+            <td>{{PCODE}}</td><td>{{PNAME}}</td><td>{{DEPT}}</td>
+            <td>{{FDATE}}</td><td>{{FSALARY}}</td>
+            <td class="text-end"><button class="btn btn-outline-danger btn-sm delete" pcode="{{PCODE}}">삭제</button></td>
+        </tr>
+        {{/each}}
+        </tbody>
+    </script>
+</div>
+<script>
+    getList();
+    function getList() {
+        $.ajax({
+            type:"get",
+            url:"/haksa/pro/list.json",
+            success:function(data){
+                console.log(data);
+                const temp=Handlebars.compile($("#temp_professors").html());
+                $("#tbl_professors").html(temp(data));
+            }
+        });
+    }
+
+    $("#tbl_professors").on("click", ".delete", function(){
+        const pcode = $(this).attr("pcode");
+        if(confirm(pcode + "번 교수를 정말로 삭제하실래요?")){
+            $.ajax({
+                type:"post",
+                url:"/haksa/pro/delete",
+                data:{pcode},
+                success:function(data){
+                    alert('삭제완료!');
+                    location.href='/haksa/pro';
+                },
+                error:function(){
+                    alert('삭제실패!');
+                }
+            });
+        }
+    });
+</script>

@@ -1,0 +1,69 @@
+<div class="my-5">
+    <h1 class="text-center">학생등록</h1>
+    <div class="row justify-content-center">
+        <form class="col-sm-10 col-md-6" name="frm" method="post">
+            <div class="input-group mb-2">
+                <span class="input-group-text">학생번호</span>
+                <input name="scode" class="form-control" disabled value="<%=code%>">
+            </div>
+            <div class="input-group mb-2">
+                <span class="input-group-text">학생이름</span>
+                <input name="sname" class="form-control">
+            </div>
+            <div class="input-group mb-2">
+                <span class="input-group-text">학생학과</span>
+                <select name="dept" class="form-select">
+                    <option>전산</option>
+                    <option>전자</option>
+                    <option>건축</option>
+                </select>
+            </div>
+            <div class="input-group mb-2">
+                <span class="input-group-text">학생학년</span>
+                <select name="year" class="form-select">
+                    <option>1</option>
+                    <option>2</option>
+                    <option>3</option>
+                </select>
+            </div>
+            <div class="input-group mb-2">
+                <span class="input-group-text">생년월일</span>
+                <input name="birthday" class="form-control" type="date" value="2006-01-01">
+            </div>
+                <div class="input-group mb-2">
+                <span class="input-group-text">지도교수</span>
+                <input name="pcode" class="form-control">
+                <%-include("professors_modal.ejs")%>
+            </div>
+            <div class="text-center mt-3">
+                <button type="submit" class="btn btn-primary px-3">학생등록</button>
+                <button type="reset" class="btn btn-secondary px-3">등록취소</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+    $(frm).on("submit", function(e){
+        e.preventDefault();
+        const scode=$(frm.scode).val();
+        const sname=$(frm.sname).val();
+        const dept=$(frm.dept).val();
+        const birthday=$(frm.birthday).val();
+        const year=$(frm.year).val();
+        const pcode=$(frm.pcode).val();
+        if(sname==""){
+            alert("학생이름을 입력하세요!");
+        }else{
+            if(!confirm("학생등록을 정말로 하실래요?")) return;
+            $.ajax({
+                type:"post",
+                url:"/haksa/stu/insert",
+                data:{scode, sname, dept, birthday, year, pcode},
+                success:function(){
+                    alert("학생등록을 완료했습니다.");
+                    location.href="/haksa/stu";
+                }
+            });
+        }
+    });
+</script>
