@@ -25,8 +25,13 @@ router.get('/list.json', async function(req, res) {
         const total = countResult.rows[0].CNT;
 
         // 2. 게시글 목록 조회
-        // Oracle에서 소문자 컬럼/테이블은 쌍따옴표로 감싸야 정확히 인식합니다.
-        let sql = 'select * from USER107.VIEW_POSTS where "rn" between :startRow and :endRow';
+        // 뷰(VIEW_POSTS)에 RN 컬럼이 존재하지 않아 발생하는 ORA-00904(부적합한 식별자) 에러를 해결하기 위해, 
+        // 오라클의 ROWNUM을 활용하는 인라인 뷰(서브쿼리) 방식으로 페이징 쿼리를 수정합니다.
+        let sql = `
+            SELECT * FROM (
+                SELECT v.*, ROWNUM rn FROM USER107.VIEW_POSTS v WHERE ROWNUM <= :endRow
+            ) WHERE rn >= :startRow
+        `;
         let result = await con.execute(sql, { startRow, endRow }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
         
         // 순환 참조 에러를 완벽하게 방지하기 위한 안전 변환 처리
@@ -45,13 +50,18 @@ router.get('/list.json', async function(req, res) {
         // 콘솔 출력 예시와 동일한 키(key) 이름으로 매핑
         const list = rawList.map(item => {
             const rn = item.rn || item.RN || 1;
+            
+            // 제목이 30자를 초과할 경우 말줄임표 처리
+            let title = item.TITLE || item.CONTENT || "제목 없음";
+            if (title.length > 30) title = title.substring(0, 30) + "...";
+
             return {
-                ID: item.PID || item.ID || rn || 0,
-                REG_DATE: item.PDATE ? item.PDATE.replace('T', ' ').substring(0, 19) : "", // 날짜와 시간 모두 추출 (YYYY-MM-DD HH:mm:ss)
+                ID: item.ID || rn || 0,
+                REG_DATE: item.FMT_DATE || "", // 뷰에서 생성한 FMT_DATE 컬럼을 사용해 작성일 표시
                 RNUM: total - rn + 1, // 전체 개수에서 현재 순번을 빼서 아래부터 오름차순으로 번호 부여
                 SNAME: item.SNAME,
-                TITLE: item.TITLE || item.CONTENT || "제목 없음",
-                WRITER: item.SCODE,
+                TITLE: title,
+                WRITER: item.WRITER, // 뷰에 있는 WRITER 컬럼 매핑
                 CONTENT: item.CONTENT
             };
         });
