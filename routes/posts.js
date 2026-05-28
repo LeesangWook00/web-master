@@ -25,11 +25,13 @@ router.get('/list.json', async function(req, res) {
         const total = countResult.rows[0].CNT;
 
         // 2. 게시글 목록 조회
-        // 뷰(VIEW_POSTS)에 RN 컬럼이 존재하지 않아 발생하는 ORA-00904(부적합한 식별자) 에러를 해결하기 위해, 
-        // 오라클의 ROWNUM을 활용하는 인라인 뷰(서브쿼리) 방식으로 페이징 쿼리를 수정합니다.
+        // 최신 글이 먼저 보이도록(내림차순 정렬) ORDER BY id DESC 구문을 먼저 실행하고,
+        // 정렬된 결과에 ROWNUM을 부여하도록 쿼리를 3중 서브쿼리로 수정합니다.
         let sql = `
             SELECT * FROM (
-                SELECT v.*, ROWNUM rn FROM USER107.VIEW_POSTS v WHERE ROWNUM <= :endRow
+                SELECT a.*, ROWNUM rn FROM (
+                    SELECT * FROM USER107.VIEW_POSTS ORDER BY id DESC
+                ) a WHERE ROWNUM <= :endRow
             ) WHERE rn >= :startRow
         `;
         let result = await con.execute(sql, { startRow, endRow }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
@@ -82,18 +84,26 @@ router.get('/insert', function (req, res, next) {
 
 /* 게시글 등록 처리 (DB에 저장) */
 router.post('/insert', async function (req, res) {
-    const scode = req.body.scode;
-    const content = req.body.content;
+    // 1. 프론트엔드에서 어떤 데이터가 넘어오는지 터미널에서 확인하기 위해 로그를 찍습니다.
+    console.log("등록 요청 데이터:", req.body);
+
+    // 2. oracledb는 값이 undefined이면 에러(NJS-044)를 발생시키므로 null 또는 빈 문자열로 처리합니다.
+    const writer = req.body.writer || req.body.scode || req.body.SCODE || null; 
+    const content = req.body.content || "";
+    const title = req.body.title || (content ? content.substring(0, 30) : "제목 없음");
+
     let con;
     try {
         con = await getConnection();
-        // 날짜(pdate)는 오라클 테이블 생성 시 DEFAULT SYSDATE로 설정했으므로 알아서 들어갑니다.
-        const sql = "INSERT INTO posts(scode, content) VALUES(:scode, :content)";
-        await con.execute(sql, { scode, content }, { autoCommit: true });
+        
+        // posts 테이블의 ID 컬럼이 GENERATED ALWAYS AS IDENTITY로 변경되었으므로, INSERT 시 ID를 제외하고 삽입합니다.
+        const sql = "INSERT INTO posts(writer, title, content) VALUES(:writer, :title, :content)";
+        await con.execute(sql, { writer, title, content }, { autoCommit: true });
         res.send('success');
     } catch (err) {
         console.error("게시글 등록 중 오류:", err);
-        res.status(500).send("등록 실패");
+        // 3. 브라우저나 콘솔에서도 원인을 바로 알 수 있도록 에러 내용을 함께 보냅니다.
+        res.status(500).send("등록 실패: " + err.message);
     } finally {
         if (con) await con.close();
     }
