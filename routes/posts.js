@@ -71,9 +71,23 @@ router.get('/list.json', async function(req, res) {
                 }
             }
 
+            // 날짜에 시간, 분, 초까지 표시하도록 포맷팅
+            const regDate = item.REG_DATE || item.reg_date;
+            let formattedDate = item.FMT_DATE || item.fmt_date || "";
+            if (regDate) {
+                const d = new Date(regDate);
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                const hh = String(d.getHours()).padStart(2, '0');
+                const min = String(d.getMinutes()).padStart(2, '0');
+                const sec = String(d.getSeconds()).padStart(2, '0');
+                formattedDate = `${yyyy}-${mm}-${dd} ${hh}:${min}:${sec}`;
+            }
+
             return {
                 ID: item.ID || item.id || 0,
-                REG_DATE: item.FMT_DATE || item.fmt_date || "", 
+                REG_DATE: formattedDate, 
                 RNUM: total - rnum + 1, // 전체 개수에서 현재 순번을 빼서 아래부터 오름차순으로 번호 부여
                 SNAME: item.SNAME || item.sname,
                 TITLE: title,
@@ -169,7 +183,22 @@ router.get('/:id.json', async function (req, res) {
         con = await getConnection();
         const sql = "SELECT * FROM view_posts WHERE id = :id";
         const result = await con.execute(sql, { id }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
-        res.send(result.rows[0]);
+
+        const post = result.rows[0];
+        if (post) {
+            const regDate = post.REG_DATE || post.reg_date;
+            if (regDate) {
+                const d = new Date(regDate);
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                const hh = String(d.getHours()).padStart(2, '0');
+                const min = String(d.getMinutes()).padStart(2, '0');
+                const sec = String(d.getSeconds()).padStart(2, '0');
+                post.FMT_DATE = `${yyyy}-${mm}-${dd} ${hh}:${min}:${sec}`;
+            }
+        }
+        res.send(post);
     } catch (err) {
         res.status(500).send("조회 실패: " + err.message);
     } finally {

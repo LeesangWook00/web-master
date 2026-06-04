@@ -1,0 +1,145 @@
+<div class="my-5">
+    <h1 class="text-center mb-5">학생 정보</h1>
+    <div class="row justify-content-center">
+        <div class="col-8 col-md-6 col-lg-5">
+            <form name="frm">
+                <div class="input-group mb-3">
+                    <span class="input-group-text">학번</span>
+                    <input class="form-control" name="scode" id="scode" readonly>
+                </div>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">이름</span>
+                    <input class="form-control" name="sname" id="sname" readonly>
+                </div>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">학과</span>
+                    <input class="form-control" name="dept" id="dept" readonly>
+                </div>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">생년월일</span>
+                    <input class="form-control" name="birthday" id="birthday" type="date" readonly>
+                </div>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">학년</span>
+                    <input class="form-control" name="year" id="year" type="number" readonly>
+                </div>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">지도교수</span>
+                    <input class="form-control" name="advisor" id="advisor" readonly>
+                </div>
+                
+                <!-- 기본 버튼 그룹 -->
+                <div class="text-center mt-3" id="btn-group">
+                    <button class="btn btn-primary px-4" type="button" id="btn-edit" style="display:none;">수정</button>
+                    <button class="btn btn-secondary px-4 mx-2" type="button" onclick="location.href='/haksa/stu'">목록</button>
+                </div>
+                
+                <!-- 수정 중일 때 나타나는 버튼 그룹 -->
+                <div class="text-center mt-3" id="btn-group-edit" style="display:none;">
+                    <button class="btn btn-primary px-4" type="button" id="btn-save">저장</button>
+                    <button class="btn btn-secondary px-4 mx-2" type="button" id="btn-cancel">취소</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const readScode = "<%= scode %>"; 
+    let originalData = {};
+
+    getRead();
+
+    function getRead() {
+        $.ajax({
+            type: "get",
+            url: `/haksa/stu/${readScode}.json`,
+            success: function(data) {
+                // 데이터가 배열로 넘어올 경우를 대비해 첫 번째 요소를 자동으로 선택합니다.
+                const student = Array.isArray(data) ? data[0] : data;
+                
+                if (!student) {
+                    alert("학생 정보를 불러오지 못했습니다.");
+                    return;
+                }
+
+                originalData = student;
+                $("#scode").val(student.SCODE || student.scode || readScode);
+                $("#sname").val(student.SNAME || student.sname);
+                $("#dept").val(student.DEPT || student.dept);
+                $("#birthday").val(student.FDATE || student.fdate);
+                $("#year").val(student.YEAR || student.year);
+                $("#advisor").val(student.ADVISOR || student.advisor);
+
+                // ★ 현재 로그인한 사용자와 학번이 일치할 때만 수정 버튼 노출
+                const currentId = sessionStorage.getItem("id");
+                const dbId = String(student.SCODE || student.scode || readScode);
+                
+                // 어떤 값으로 비교되고 있는지 브라우저 개발자 도구(F12) 콘솔에 출력합니다.
+                console.log("내 로그인 아이디:", currentId);
+                console.log("현재 페이지 학생 학번:", dbId);
+
+                // 1. 공백 제거 및 대소문자 무시 후 비교
+                const isStringMatch = currentId && currentId.trim().toLowerCase() === dbId.trim().toLowerCase();
+                // 2. 숫자로 변환해서 비교 (예: "0101" 과 "101" 이 같다고 판별)
+                const isNumberMatch = currentId && !isNaN(currentId) && !isNaN(dbId) && Number(currentId) === Number(dbId);
+
+                if (isStringMatch || isNumberMatch) {
+                    $("#btn-edit").show();
+                } else {
+                    console.warn("아이디 불일치로 인해 수정 버튼을 숨깁니다.");
+                }
+            },
+            error: function(err) {
+                alert("데이터 로드 실패!\n상세: " + (err.responseJSON ? err.responseJSON.error : err.responseText));
+            }
+        });
+    }
+
+    // 수정 버튼 클릭 (입력 활성화)
+    $("#btn-edit").on("click", function() {
+        $("#btn-group").hide();
+        $("#btn-group-edit").show();
+        // 학번을 제외한 모든 칸의 읽기 전용 속성 해제
+        $("#sname, #dept, #birthday, #year, #advisor").attr("readonly", false);
+    });
+
+    // 취소 버튼 클릭 (입력값 복구)
+    $("#btn-cancel").on("click", function() {
+        $("#sname").val(originalData.SNAME || originalData.sname || "");
+        $("#dept").val(originalData.DEPT || originalData.dept || "");
+        $("#birthday").val(originalData.FDATE || originalData.fdate || "");
+        $("#year").val(originalData.YEAR || originalData.year || "");
+        $("#advisor").val(originalData.ADVISOR || originalData.advisor || "");
+        
+        $("#sname, #dept, #birthday, #year, #advisor").attr("readonly", true);
+        
+        $("#btn-group").show();
+        $("#btn-group-edit").hide();
+    });
+
+    // 저장 버튼 클릭 (AJAX 수정 요청)
+    $("#btn-save").on("click", function() {
+        if(confirm("수정하시겠습니까?")) {
+            $.ajax({
+                type: "post",
+                url: "/haksa/stu/update",
+                data: {
+                    scode: $("#scode").val(),
+                    sname: $("#sname").val(),
+                    dept: $("#dept").val(),
+                    birthday: $("#birthday").val(),
+                    year: $("#year").val(),
+                    advisor: $("#advisor").val()
+                },
+                success: function() {
+                    alert("수정 완료!");
+                    location.reload();
+                },
+                error: function(err) {
+                    alert("수정 실패!\n" + err.responseText);
+                }
+            });
+        }
+    });
+</script>

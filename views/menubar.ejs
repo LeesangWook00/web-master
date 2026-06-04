@@ -40,24 +40,26 @@
     </div>
 </nav>
 <script>
-    $(".logout").on("click", function(e){
-        e.preventDefault();
-        if(confirm("정말로 로그아웃하실래요?")){
-            sessionStorage.clear();
-            location.href='/';
+    $(document).ready(function() {
+        $(".logout").on("click", function(e){
+            e.preventDefault();
+            if(confirm("정말로 로그아웃하실래요?")){
+                sessionStorage.clear();
+                location.href='/';
+            }
+        });
+    
+        const sname = sessionStorage.getItem("name");
+        const scode = sessionStorage.getItem("id");
+        if(sname){
+            $(".before").hide();
+            $(".after").show();
+            $(".sname").html(`${sname}(${scode})`);
+        }else{
+            $(".before").show();
+            $(".after").hide();
         }
-    })
-
-    const sname=sessionStorage.getItem("name");
-    const scode=sessionStorage.getItem("id");
-    if(sname){
-        $(".before").hide();
-        $(".after").show();
-        $(".sname").html(`${sname}(${scode})`);
-    }else{
-        $(".before").show();
-        $(".after").hide();
-    }
+    });
 
     // $(document).ready(function(){
     //     const pathname=window.location.pathname;

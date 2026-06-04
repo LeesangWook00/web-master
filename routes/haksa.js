@@ -168,6 +168,55 @@ router.post('/stu/delete', async function(req, res){
     }
 });
 
+/* 학생 상세 페이지 이동 */
+router.get('/stu/read/:scode', function (req, res) {
+    const scode = req.params.scode;
+    res.render('index', { title: '학생정보', pageName: 'haksa/students_read.ejs', scode: scode });
+});
+
+/* 학생 상세 데이터 가져오기 (JSON) */
+router.get('/stu/:scode.json', async function (req, res) {
+    const scode = req.params.scode;
+    let con;
+    try {
+        con = await getConnection();
+        const sql = "SELECT scode, sname, dept, TO_CHAR(birthday, 'YYYY-MM-DD') fdate, year, advisor FROM students WHERE scode = :scode";
+        const result = await con.execute(sql, { scode }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
+        
+        if (result.rows.length === 0) {
+            return res.status(404).send({ error: "DB에 해당 학생 데이터가 존재하지 않습니다." });
+        }
+        
+        res.send(result.rows[0]);
+    } catch (err) {
+        console.log(err);
+        res.status(500).send("조회 오류");
+    } finally {
+        if (con) await con.close();
+    }
+});
+
+/* 학생 정보 수정 적용 */
+router.post('/stu/update', async function (req, res) {
+    const { scode, sname, dept, birthday, year, advisor } = req.body;
+    let con;
+    try {
+        con = await getConnection();
+        const sql = `
+            UPDATE students 
+            SET sname=:sname, dept=:dept, birthday=to_date(:birthday, 'YYYY-MM-DD'), year=:year, advisor=:advisor 
+            WHERE scode=:scode
+        `;
+        await con.execute(sql, { scode, sname, dept, birthday, year, advisor }, { autoCommit: true });
+        res.send('success');
+    } catch (err) {
+        console.log(err);
+        res.status(500).send("수정 오류: " + err.message);
+    } finally {
+        if (con) await con.close();
+    }
+});
+
 /* 강좌페이지이동 */
 router.get('/cou', function (req, res, next) {
     res.render('index', { title: '강좌관리', pageName: 'haksa/courses.ejs' });
