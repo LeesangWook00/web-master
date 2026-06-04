@@ -105,8 +105,8 @@ router.post('/insert', async function (req, res) {
 
     // 2. oracledb는 값이 undefined이면 에러(NJS-044)를 발생시키므로 null 또는 빈 문자열로 처리합니다.
     const writer = req.body.writer || req.body.scode || req.body.SCODE || null; 
+    const title = req.body.title || "제목 없음";
     const content = req.body.content || "";
-    const title = req.body.title || (content ? content.substring(0, 30) : "제목 없음");
 
     let con;
     try {

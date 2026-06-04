@@ -3,13 +3,17 @@
     <div class="row justify-content-center">
         <div class="col-10 col-md-8 col-lg-6">
             <form name="frm">
-                <div class="input-group mb-3">
-                    <span class="input-group-text" id="writer_label">작성자(ID)</span>
-                    <input class="form-control" name="writer" id="login_writer" readonly>
+                <div class="input-group mb-4 shadow-sm">
+                    <span class="input-group-text bg-secondary-subtle text-secondary-emphasis fw-bold border-secondary-subtle" id="writer_label" style="width: 120px; justify-content: center;">작성자(ID)</span>
+                    <input class="form-control bg-light text-secondary-emphasis border-secondary-subtle" name="writer" id="login_writer" readonly>
                 </div>
-                <div class="input-group mb-3">
-                    <span class="input-group-text">글 내용</span>
-                    <textarea class="form-control" name="content" rows="6" placeholder="자유롭게 글을 남겨주세요." required></textarea>
+                <div class="input-group mb-4 shadow-sm">
+                    <span class="input-group-text bg-primary-subtle text-primary-emphasis fw-bold border-primary-subtle" style="width: 120px; justify-content: center;">제목</span>
+                    <input class="form-control border-primary-subtle" name="title" placeholder="제목을 입력하세요." required>
+                </div>
+                <div class="input-group mb-4 shadow-sm">
+                    <span class="input-group-text bg-info-subtle text-info-emphasis fw-bold border-info-subtle" style="width: 120px; justify-content: center;">글 내용</span>
+                    <textarea class="form-control border-info-subtle" name="content" rows="6" placeholder="자유롭게 글을 남겨주세요." required></textarea>
                 </div>
                 <div class="text-center mt-3">
                     <button class="btn btn-primary px-5" type="submit">등록</button>

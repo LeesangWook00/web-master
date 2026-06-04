@@ -35,9 +35,9 @@
 
 <script id="temp" type="text/x-handlebars-template">
     {{#each .}}
-    <tr>
-        <td>{{ID}}</td>
-        <td class="text-start"><a href="/posts/{{ID}}">{{TITLE}}</a></td>
+    <tr style="cursor: pointer;" onclick="location.href='/posts/{{ID}}'">
+        <td>{{RNUM}}</td>
+        <td class="text-start">{{TITLE}}</td>
         <td>{{SNAME}}({{WRITER}})</td>
         <td class="text-end">
             {{#if IS_MODIFIED}}<span class="text-danger fw-bold me-1" style="font-size: 0.8em;" title="수정된 게시글입니다">N</span>{{/if}}{{REG_DATE}}
