@@ -43,6 +43,11 @@
             success: function(data){
                 const temp = Handlebars.compile($("#temp_courses").html());
                 $("#tbl_courses").html(temp(data));
+                
+                // 학생으로 로그인 했을 때 삭제 버튼 숨기기
+                if (sessionStorage.getItem("role") === "student") {
+                    $("#tbl_courses .delete").hide();
+                }
             }
         });
     }

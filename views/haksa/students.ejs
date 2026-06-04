@@ -36,6 +36,11 @@
                 console.log(data);
                 const temp=Handlebars.compile($("#temp_students").html());
                 $("#tbl_students").html(temp(data));
+
+                // 학생으로 로그인 했을 때 삭제 버튼 숨기기
+                if (sessionStorage.getItem("role") === "student") {
+                    $("#tbl_students .delete").hide();
+                }
             },
             error:function(xhr){
                 console.error(xhr.responseText);
