@@ -51,10 +51,15 @@
     
         const sname = sessionStorage.getItem("name");
         const scode = sessionStorage.getItem("id");
+        const srole = sessionStorage.getItem("role");
         if(sname){
             $(".before").hide();
             $(".after").show();
             $(".sname").html(`${sname}(${scode})`);
+            
+            // 권한에 따라 마이페이지(수정 화면) 경로 연결
+            const profileUrl = srole === 'professor' ? `/haksa/pro/read/${scode}` : `/haksa/stu/read/${scode}`;
+            $(".sname").attr("href", profileUrl);
         }else{
             $(".before").show();
             $(".after").hide();

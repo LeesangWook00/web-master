@@ -17,10 +17,10 @@
         </thead>
         <tbody class="table-group-divider">
         {{#each .}}
-        <tr style="cursor: pointer;" onclick="location.href='/haksa/stu/read/{{SCODE}}'">
+        <tr>
             <th scope="row">{{SCODE}}</th><td>{{SNAME}}</td><td>{{DEPT}}</td>
             <td>{{FDATE}}</td><td>{{PNAME}}</td>
-            <td class="text-end"><button class="btn btn-outline-danger btn-sm delete" scode="{{SCODE}}" onclick="event.stopPropagation();">삭제</button></td>
+            <td class="text-end"><button class="btn btn-outline-danger btn-sm delete" scode="{{SCODE}}">삭제</button></td>
         </tr>
         {{/each}}
         </tbody>

@@ -85,6 +85,54 @@ router.post('/pro/delete', async function(req, res){
     }
 });
 
+/* 교수 상세 페이지 이동 */
+router.get('/pro/read/:pcode', function (req, res) {
+    const pcode = req.params.pcode;
+    res.render('index', { title: '교수정보', pageName: 'haksa/professors_read.ejs', pcode: pcode });
+});
+
+/* 교수 상세 데이터 가져오기 (JSON) */
+router.get('/pro/:pcode.json', async function (req, res) {
+    const pcode = req.params.pcode;
+    let con;
+    try {
+        con = await getConnection();
+        const sql = "SELECT pcode, pname, dept, TO_CHAR(hiredate, 'YYYY-MM-DD') fdate, title, salary FROM professors WHERE pcode = :pcode";
+        const result = await con.execute(sql, { pcode }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
+        
+        if (result.rows.length === 0) {
+            return res.status(404).send({ error: "DB에 해당 교수 데이터가 존재하지 않습니다." });
+        }
+        res.send(result.rows[0]);
+    } catch (err) {
+        console.log(err);
+        res.status(500).send("조회 오류");
+    } finally {
+        if (con) await con.close();
+    }
+});
+
+/* 교수 정보 수정 적용 */
+router.post('/pro/update', async function (req, res) {
+    const { pcode, pname, dept, hiredate, title, salary } = req.body;
+    let con;
+    try {
+        con = await getConnection();
+        const sql = `
+            UPDATE professors 
+            SET pname=:pname, dept=:dept, hiredate=to_date(:hiredate, 'YYYY-MM-DD'), title=:title, salary=:salary 
+            WHERE pcode=:pcode
+        `;
+        await con.execute(sql, { pcode, pname, dept, hiredate, title, salary }, { autoCommit: true });
+        res.send('success');
+    } catch (err) {
+        console.log(err);
+        res.status(500).send("수정 오류: " + err.message);
+    } finally {
+        if (con) await con.close();
+    }
+});
+
 /* 학생페이지이동 */
 router.get('/stu', function (req, res, next) {
     res.render('index', { title: '학생관리', pageName: 'haksa/students.ejs' });
