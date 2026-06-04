@@ -11,16 +11,27 @@ router.get('/login', function (req, res, next) {
 
 //로그인 체크
 router.post('/login', async function(req, res){
-    const scode = req.body.scode;
+    const id = req.body.id;
     const pass = req.body.pass;
-    console.log(scode, pass);
+    const role = req.body.role; // 'student' or 'professor'
+    console.log(id, pass, role);
     let con;
     try{
         con = await getConnection();
-        let sql = "select * from students where scode=:scode";
-        let result=await con.execute(sql, {scode}, {outFormat:OracleDB.OUT_FORMAT_OBJECT});
-        console.log("DB 조회 결과:", result.rows[0]); // 어떤 컬럼들이 가져와지는지 확인
-        res.send(result.rows[0]);
+        if (role === 'professor') {
+            // 교수는 통일된 비밀번호('1234')로 검증합니다.
+            if (pass !== '1234') {
+                return res.send(null);
+            }
+            let sql = "select * from professors where pcode=:id";
+            let result=await con.execute(sql, {id}, {outFormat:OracleDB.OUT_FORMAT_OBJECT});
+            res.send(result.rows[0] || null);
+        } else {
+            // 학생은 students 테이블에서 비밀번호까지 함께 확인합니다.
+            let sql = "select * from students where scode=:id and pass=:pass";
+            let result=await con.execute(sql, {id, pass}, {outFormat:OracleDB.OUT_FORMAT_OBJECT});
+            res.send(result.rows[0] || null);
+        }
     }catch(err){
         console.log(err);
         res.sendStatus(500);

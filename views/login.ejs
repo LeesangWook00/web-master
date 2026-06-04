@@ -1,56 +1,103 @@
-<div class="my-5">
-    <div class="row justify-content-center">
-        <div class="col-8 col-md-6 col-xl-4">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="text-center my-3">로그인</h3>
+<div class="row my-5 justify-content-center">
+    <div class="col-8 col-md-6 col-lg-4">
+        <h1 class="text-center mb-5" id="page-title">로그인</h1>
+        
+        <!-- 로그인 폼 영역 -->
+        <div class="card p-4" id="login-form-container">
+            <form name="frm" method="post">
+                <div class="mb-4 text-center">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="role" id="roleStudent" value="student" checked>
+                        <label class="form-check-label" for="roleStudent">학생 로그인</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="role" id="roleProfessor" value="professor">
+                        <label class="form-check-label" for="roleProfessor">교수 로그인</label>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <form name="frm">
-                        <input name="scode" value="92414029" class="form-control mb-2" placeholder="학생번호">
-                        <input name="pass" value="1234" class="form-control mb-2" placeholder="비밀번호" type="password">
-                        <button class="w-100 btn btn-primary">로그인</button>
-                    </form>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">아이디</span>
+                    <input name="id" class="form-control" placeholder="학번 또는 교수번호">
                 </div>
-            </div>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">비밀번호</span>
+                    <input name="pass" type="password" class="form-control" placeholder="비밀번호 (교수는 1234)">
+                </div>
+                <div class="text-center">
+                    <button class="btn btn-primary w-100">로그인</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 이미 로그인된 상태 영역 (중복 로그인 방지) -->
+        <div class="card p-4 text-center" id="logged-in-container" style="display: none;">
+            <h4 class="mb-4"><span id="user-info" class="text-primary fw-bold"></span></h4>
+            <p>이미 로그인되어 있습니다.</p>
+            <button class="btn btn-danger w-100" id="btn-logout">로그아웃</button>
         </div>
     </div>
 </div>
 <script>
+    // 페이지 로드 시 로그인 상태 확인 (중복 로그인 접근 방지)
+    const currentId = sessionStorage.getItem("id");
+    const currentName = sessionStorage.getItem("name");
+    const currentRole = sessionStorage.getItem("role");
+
+    if (currentId) {
+        $("#login-form-container").hide();
+        $("#logged-in-container").show();
+        $("#page-title").text("내 정보");
+        
+        const roleLabel = currentRole === 'professor' ? '교수' : '학생';
+        $("#user-info").text(`${currentName}(${currentId}) ${roleLabel}`);
+    }
+
+    // 로그아웃 처리
+    $("#btn-logout").on("click", function(){
+        sessionStorage.clear();
+        alert("로그아웃 되었습니다.");
+        location.href = "/";
+    });
+
     $(frm).on("submit", function(e){
         e.preventDefault();
-        const scode=$(frm.scode).val().trim();
-        const pass=$(frm.pass).val().trim();
-        if(scode=="" || pass==""){
-            alert("학번과 비밀번호는 꼭 입력하셔야합니다.");
-        }else{
-            //로그인체크
-            $.ajax({
-                type:"post",
-                url:"/users/login",
-                data:{scode, pass},
-                success:function(data){
-                    if(!data || data === ""){
-                        alert("존재하지 않는 학번입니다.");
-                        $(frm.scode).focus();
-                        return;
-                    }
-                    
-                    console.log("DB 데이터:", data);
-                  
-                    const dbPass = (data.PASS || data.PW || data.PASSWORD || data.pass || "").toString().trim();
-                    if(dbPass === ""){
-                        alert("해당 학생의 비밀번호가 DB에 설정되어 있지 않습니다.");
-                    }else if(pass != dbPass){
-                        alert("비밀번호 불일치!\n내 입력값: [" + pass + "]\nDB 저장값: [" + dbPass + "]");
-                        $(frm.pass).focus();
-                    }else{
-                        sessionStorage.setItem("sname", data.SNAME || data.sname);
-                        sessionStorage.setItem("scode", data.SCODE || data.scode);
-                        location.href="/";
-                    }
-                }
-            })
+        const id = $(frm.id).val();
+        const pass = $(frm.pass).val();
+        const role = $(frm.role).filter(':checked').val();
+        
+        if(id == "") {
+            alert("아이디를 입력하세요!");
+            $(frm.id).focus();
+            return;
         }
-    })
+        if(pass == "") {
+            alert("비밀번호를 입력하세요!");
+            $(frm.pass).focus();
+            return;
+        }
+
+        $.ajax({
+            type: "post",
+            url: "/users/login",
+            data: {id, pass, role},
+            success: function(data){
+                if(data){
+                    alert("로그인 성공!");
+                    sessionStorage.setItem("id", id);
+                    sessionStorage.setItem("role", role);
+                    sessionStorage.setItem("name", role === 'professor' ? data.PNAME : data.SNAME);
+                    
+                    const target = sessionStorage.getItem("target");
+                    if(target) {
+                        sessionStorage.removeItem("target");
+                        location.href = target;
+                    } else {
+                        location.href = "/";
+                    }
+                } else {
+                    alert("아이디가 존재하지 않거나 비밀번호가 틀렸습니다.");
+                }
+            }
+        });
+    });
 </script>
