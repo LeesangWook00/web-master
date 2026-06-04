@@ -26,7 +26,7 @@ router.get('/list.json', async function(req, res) {
         let countParams = {};
         if (word) {
             // 직관적인 검색을 위해 내용(content) 검색을 제외하고, 제목(title)에서만 검색되도록 변경합니다.
-            countSql += " where title like '%' || :word || '%'";
+            countSql += " where title like '%' || :word || '%' or sname like '%' || :word || '%'";
             countParams.word = word;
         }
         let countResult = await con.execute(countSql, countParams, { outFormat: oracledb.OUT_FORMAT_OBJECT });
@@ -40,7 +40,7 @@ router.get('/list.json', async function(req, res) {
                     SELECT * FROM view_posts
         `;
         if (word) {
-            sql += " WHERE title LIKE '%' || :word || '%'";
+            sql += " WHERE title LIKE '%' || :word || '%' or sname LIKE '%' || :word || '%'";
         }
         sql += ` ORDER BY id DESC
                 ) a WHERE ROWNUM <= :endRow
@@ -61,6 +61,16 @@ router.get('/list.json', async function(req, res) {
             let title = item.TITLE || item.title || item.CONTENT || item.content || "제목 없음";
             if (title.length > 30) title = title.substring(0, 30) + "...";
 
+            // 수정일(updated_at)이 존재할 경우 현재 시간과 비교하여 1시간(3600000ms) 이내인지 확인
+            const updatedAt = item.UPDATED_AT || item.updated_at;
+            let isModified = false;
+            if (updatedAt) {
+                const diff = new Date() - new Date(updatedAt);
+                if (diff <= 1000 * 60 * 60) { // 1시간(60분 * 60초 * 1000밀리초) 이내
+                    isModified = true;
+                }
+            }
+
             return {
                 ID: item.ID || item.id || 0,
                 REG_DATE: item.FMT_DATE || item.fmt_date || "", 
@@ -68,7 +78,8 @@ router.get('/list.json', async function(req, res) {
                 SNAME: item.SNAME || item.sname,
                 TITLE: title,
                 WRITER: item.WRITER || item.writer, 
-                CONTENT: item.CONTENT || item.content
+                CONTENT: item.CONTENT || item.content,
+                IS_MODIFIED: isModified
             };
         });
         
@@ -112,6 +123,64 @@ router.post('/insert', async function (req, res) {
     } finally {
         if (con) await con.close();
     }
+});
+
+/* 게시글 수정 처리 */
+router.post('/update', async function(req, res) {
+    const id = req.body.id;
+    const title = req.body.title;
+    const content = req.body.content;
+    console.log("게시글 수정 요청 데이터 - 번호:", id, ", 제목:", title);
+    let con;
+    try {
+        con = await getConnection();
+        const sql = "UPDATE posts SET title=:title, content=:content, updated_at=sysdate WHERE id=:id";
+        await con.execute(sql, { title, content, id }, { autoCommit: true });
+        res.send('success');
+    } catch(err) {
+        console.error("게시글 수정 중 DB 오류:", err);
+        res.status(500).send("수정 실패: " + err.message);
+    } finally {
+        if (con) await con.close();
+    }
+});
+
+/* 게시글 삭제 처리 */
+router.post('/delete', async function(req, res) {
+    const id = req.body.id;
+    let con;
+    try {
+        con = await getConnection();
+        const sql = "DELETE FROM posts WHERE id=:id";
+        await con.execute(sql, { id }, { autoCommit: true });
+        res.send('success');
+    } catch(err) {
+        res.status(500).send("삭제 실패: " + err.message);
+    } finally {
+        if (con) await con.close();
+    }
+});
+
+/* 게시글 상세 데이터 (JSON) */
+router.get('/:id.json', async function (req, res) {
+    const id = req.params.id;
+    let con;
+    try {
+        con = await getConnection();
+        const sql = "SELECT * FROM view_posts WHERE id = :id";
+        const result = await con.execute(sql, { id }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
+        res.send(result.rows[0]);
+    } catch (err) {
+        res.status(500).send("조회 실패: " + err.message);
+    } finally {
+        if (con) await con.close();
+    }
+});
+
+/* 게시글 상세 페이지 이동 */
+router.get('/:id', function (req, res, next) {
+    const id = req.params.id;
+    res.render('index', { title: '게시글 상세', pageName: 'posts/read.ejs', id: id });
 });
 
 module.exports = router;

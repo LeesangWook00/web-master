@@ -4,7 +4,7 @@
     <div class="row mb-2">
         <form name="frm" class="col-8 col-md-4">
             <div class="input-group">
-                <input name="word" class="form-control" placeholder="제목 검색">
+                <input name="word" class="form-control" placeholder="제목 또는 작성자 검색">
                 <button class="btn btn-primary">검색</button>
             </div>
         </form>
@@ -39,7 +39,9 @@
         <td>{{ID}}</td>
         <td class="text-start"><a href="/posts/{{ID}}">{{TITLE}}</a></td>
         <td>{{SNAME}}({{WRITER}})</td>
-        <td class="text-end">{{REG_DATE}}</td>
+        <td class="text-end">
+            {{#if IS_MODIFIED}}<span class="text-danger fw-bold me-1" style="font-size: 0.8em;" title="수정된 게시글입니다">N</span>{{/if}}{{REG_DATE}}
+        </td>
     </tr>
     {{/each}}
 </script>

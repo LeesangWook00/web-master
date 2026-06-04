@@ -173,4 +173,64 @@ router.get('/cou', function (req, res, next) {
     res.render('index', { title: '강좌관리', pageName: 'haksa/courses.ejs' });
 });
 
+/* 강좌목록 데이터 */
+router.get('/cou/list.json', async function (req, res) {
+    let con;
+    try {
+        con = await getConnection();
+        // 강좌 테이블과 교수 테이블을 조인하여 담당 교수의 이름(pname)을 함께 가져옵니다.
+        const sql = "SELECT c.lcode, c.lname, c.hours, c.room, c.capacity, c.persons, p.pname FROM courses c LEFT JOIN professors p ON c.instructor = p.pcode ORDER BY c.lcode DESC";
+        const result = await con.execute(sql, {}, { outFormat: oracledb.OUT_FORMAT_OBJECT });
+        res.send(result.rows);
+    } catch (err) {
+        console.log("강좌 목록 로딩 중 에러:", err);
+        res.status(500).send("서버 오류");
+    } finally {
+        if (con) await con.close();
+    }
+});
+
+// 강좌등록 페이지 이동
+router.get('/cou/insert', function (req, res) {
+    res.render('index', { title: '강좌등록', pageName: 'haksa/courses_insert.ejs' });
+});
+
+// 강좌 등록
+router.post('/cou/insert', async function (req, res) {
+    const { lcode, lname, hours, room, instructor, capacity } = req.body;
+    let con;
+    try {
+        con = await getConnection();
+        // 새 강좌의 기본 수강신청 인원(persons)은 0명으로 등록합니다.
+        const sql = `
+            INSERT INTO courses(lcode, lname, hours, room, instructor, capacity, persons) 
+            VALUES(:lcode, :lname, :hours, :room, :instructor, :capacity, 0)
+        `;
+        await con.execute(sql, { lcode, lname, hours, room, instructor, capacity }, { autoCommit: true });
+        res.sendStatus(200);
+    } catch (err) {
+        console.log(err);
+        res.status(500).send(err.message);
+    } finally {
+        if (con) await con.close();
+    }
+});
+
+// 강좌 삭제
+router.post('/cou/delete', async function (req, res) {
+    let con;
+    const lcode = req.body.lcode;
+    try {
+        con = await getConnection();
+        const sql = "DELETE FROM courses WHERE lcode=:lcode";
+        await con.execute(sql, { lcode }, { autoCommit: true });
+        res.sendStatus(200);
+    } catch (err) {
+        console.log(err);
+        res.status(500).send(err.message);
+    } finally {
+        if (con) await con.close();
+    }
+});
+
 module.exports = router;

@@ -1,0 +1,63 @@
+<div class="my-5">
+    <h1 class="text-center mb-5">강좌등록</h1>
+    <div class="row justify-content-center">
+        <div class="col-8 col-md-6 col-lg-5">
+            <form name="frm">
+                <div class="input-group mb-3">
+                    <span class="input-group-text">강좌번호</span>
+                    <input class="form-control" name="lcode" placeholder="예: C01" required>
+                </div>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">강좌명</span>
+                    <input class="form-control" name="lname" required>
+                </div>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">시수(학점)</span>
+                    <input class="form-control" name="hours" type="number" min="1" max="10" required>
+                </div>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">강의실</span>
+                    <input class="form-control" name="room" required>
+                </div>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">수강정원</span>
+                    <input class="form-control" name="capacity" type="number" min="1" required>
+                </div>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">담당교수(ID)</span>
+                    <input class="form-control" name="instructor" id="instructor" readonly>
+                </div>
+                <div class="text-center mt-3">
+                    <button class="btn btn-primary px-4" type="submit">등록</button>
+                    <button class="btn btn-secondary px-4 mx-2" type="button" onclick="location.href='/haksa/cou'">취소</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 로그인한 교수님의 번호 자동 입력
+    const uid = sessionStorage.getItem("id");
+    if(uid) {
+        $("#instructor").val(uid);
+    }
+
+    $(frm).on("submit", function(e){
+        e.preventDefault();
+        if(confirm("강좌를 등록하시겠습니까?")){
+            $.ajax({
+                type: "post",
+                url: "/haksa/cou/insert",
+                data: $(frm).serialize(),
+                success: function(){
+                    alert("강좌 등록 완료!");
+                    location.href = "/haksa/cou";
+                },
+                error: function(err){
+                    alert("등록 실패!\n상세: " + err.responseText);
+                }
+            });
+        }
+    });
+</script>

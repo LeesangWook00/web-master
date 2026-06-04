@@ -1,3 +1,82 @@
 <div class="my-5">
     <h1 class="text-center">강좌관리</h1>
+    <div class="text-end mb-2">
+        <button class="btn btn-primary px-5 btn-insert-cou">강좌등록</button>
+    </div>
+    <table id="tbl_courses" class="table table-striped table-hover"></table>
+    
+    <script id="temp_courses" type="text/x-handlebars-template">
+        <thead>
+            <tr>
+                <th scope="col">강좌번호</th>
+                <th scope="col">강좌명</th>
+                <th scope="col">학점(시수)</th>
+                <th scope="col">강의실</th>
+                <th scope="col">담당교수</th>
+                <th scope="col">수강인원</th>
+                <th scope="col"></th>
+            </tr>
+        </thead>
+        <tbody class="table-group-divider">
+        {{#each .}}
+        <tr>
+            <th scope="row">{{LCODE}}</th>
+            <td>{{LNAME}}</td>
+            <td>{{HOURS}}학점</td>
+            <td>{{ROOM}}</td>
+            <td>{{PNAME}}</td>
+            <td>{{PERSONS}} / {{CAPACITY}}</td>
+            <td class="text-end"><button class="btn btn-outline-danger btn-sm delete" lcode="{{LCODE}}">삭제</button></td>
+        </tr>
+        {{/each}}
+        </tbody>
+    </script>
 </div>
+
+<script>
+    getList();
+    
+    function getList() {
+        $.ajax({
+            type: "get",
+            url: "/haksa/cou/list.json",
+            success: function(data){
+                const temp = Handlebars.compile($("#temp_courses").html());
+                $("#tbl_courses").html(temp(data));
+            }
+        });
+    }
+
+    // 강좌 등록 버튼 (교수 계정 확인)
+    $(".btn-insert-cou").on("click", function(){
+        const role = sessionStorage.getItem("role");
+        if (role === 'professor') {
+            location.href = '/haksa/cou/insert';
+        } else if (role === 'student') {
+            alert('교수님만 강좌 등록이 가능합니다.');
+        } else {
+            alert('교수 계정으로 로그인이 필요합니다.');
+            sessionStorage.setItem("target", "/haksa/cou/insert");
+            location.href = '/users/login';
+        }
+    });
+
+    // 강좌 삭제 기능
+    $("#tbl_courses").on("click", ".delete", function(){
+        const lcode = $(this).attr("lcode");
+        if(confirm(lcode + "번 강좌를 정말로 삭제하시겠습니까?")){
+            $.ajax({
+                type: "post",
+                url: "/haksa/cou/delete",
+                data: { lcode },
+                success: function(){
+                    alert('삭제완료!');
+                    getList(); // 화면 새로고침
+                },
+                error: function(err){
+                    alert('삭제실패!\n상세: ' + err.responseText);
+                }
+            });
+        }
+    });
+</script>

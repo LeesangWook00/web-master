@@ -1,0 +1,130 @@
+<div class="my-5">
+    <h1 class="text-center mb-5">게시글 상세</h1>
+    <div class="row justify-content-center">
+        <div class="col-10 col-md-8 col-lg-6">
+            <form name="frm">
+                <div class="input-group mb-3">
+                    <span class="input-group-text">제목</span>
+                    <input class="form-control" name="title" id="title" readonly>
+                </div>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">작성자</span>
+                    <input class="form-control" name="sname" id="sname" readonly>
+                </div>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">작성일</span>
+                    <input class="form-control" name="fmt_date" id="fmt_date" readonly>
+                </div>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">글 내용</span>
+                    <textarea class="form-control" name="content" id="content" rows="6" readonly></textarea>
+                </div>
+                
+                <!-- 기본 버튼 그룹 (목록, 수정, 삭제) -->
+                <div class="text-center mt-3" id="btn-group">
+                    <button class="btn btn-primary px-4" type="button" id="btn-edit" style="display:none;">수정</button>
+                    <button class="btn btn-danger px-4 mx-2" type="button" id="btn-delete" style="display:none;">삭제</button>
+                    <button class="btn btn-secondary px-4" type="button" onclick="location.href='/posts'">목록</button>
+                </div>
+                
+                <!-- 수정 중일 때 나타나는 버튼 그룹 (저장, 취소) -->
+                <div class="text-center mt-3" id="btn-group-edit" style="display:none;">
+                    <button class="btn btn-primary px-4" type="button" id="btn-save">저장</button>
+                    <button class="btn btn-secondary px-4 mx-2" type="button" id="btn-cancel">취소</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const id = "<%= id %>"; // 라우터에서 넘겨준 게시글 번호
+    let postWriter = "";
+    let originalTitle = "";
+    let originalContent = "";
+
+    getRead();
+
+    function getRead() {
+        $.ajax({
+            type: "get",
+            url: `/posts/${id}.json`,
+            success: function(data) {
+                originalTitle = data.TITLE || data.title;
+                originalContent = data.CONTENT || data.content;
+                postWriter = data.WRITER || data.writer;
+                
+                $("#title").val(originalTitle);
+                $("#sname").val(`${data.SNAME || data.sname}(${postWriter})`);
+                const isModified = data.UPDATED_AT || data.updated_at ? " (수정됨)" : "";
+                $("#fmt_date").val((data.FMT_DATE || data.fmt_date || data.REG_DATE || data.reg_date) + isModified);
+                $("#content").val(originalContent);
+
+                // 현재 로그인한 사용자와 게시글 작성자가 동일하면 수정/삭제 버튼 노출
+                const currentId = sessionStorage.getItem("id");
+                if (currentId === postWriter) {
+                    $("#btn-edit, #btn-delete").show();
+                }
+            },
+            error: function() {
+                alert("게시글을 불러오는데 실패했습니다.");
+            }
+        });
+    }
+
+    // 수정 버튼 클릭
+    $("#btn-edit").on("click", function() {
+        $("#btn-group").hide();
+        $("#btn-group-edit").show();
+        // 읽기 전용 해제 후 제목에 포커스
+        $("#title, #content").attr("readonly", false).focus();
+    });
+
+    // 취소 버튼 클릭 (수정 취소)
+    $("#btn-cancel").on("click", function() {
+        $("#title").val(originalTitle);
+        $("#content").val(originalContent);
+        $("#title, #content").attr("readonly", true);
+        
+        $("#btn-group").show();
+        $("#btn-group-edit").hide();
+    });
+
+    // 저장 버튼 클릭 (수정 완료)
+    $("#btn-save").on("click", function() {
+        const title = $("#title").val();
+        const content = $("#content").val();
+        if(confirm("이대로 수정하시겠습니까?")) {
+            $.ajax({
+                type: "post",
+                url: "/posts/update",
+                data: { id: id, title: title, content: content },
+                success: function() {
+                    alert("수정 완료!");
+                    location.reload();
+                },
+                error: function(err) {
+                    alert("수정 실패!\n상세: " + err.responseText);
+                }
+            });
+        }
+    });
+
+    // 삭제 버튼 클릭
+    $("#btn-delete").on("click", function() {
+        if(confirm("정말로 게시글을 삭제하시겠습니까? (삭제 후 복구할 수 없습니다.)")) {
+            $.ajax({
+                type: "post",
+                url: "/posts/delete",
+                data: { id: id },
+                success: function() {
+                    alert("삭제 완료!");
+                    location.href = "/posts"; // 목록으로 이동
+                },
+                error: function(err) {
+                    alert("삭제 실패!\n상세: " + err.responseText);
+                }
+            });
+        }
+    });
+</script>
