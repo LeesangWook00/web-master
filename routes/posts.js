@@ -12,6 +12,7 @@ router.get('/', function (req, res, next) {
 router.get('/list.json', async function(req, res) {
     const page = parseInt(req.query.page) || 1;
     const size = parseInt(req.query.size) || 10;
+    const word = req.query.word || ""; // 검색어 파라미터 받기
     const startRow = (page - 1) * size + 1;
     const endRow = page * size;
     let con;
@@ -19,59 +20,63 @@ router.get('/list.json', async function(req, res) {
     try {
         con = await getConnection();
         
-        // 1. 전체 개수 조회 (번호 역순 계산을 위해 먼저 조회)
-        let countSql = 'select count(*) as cnt from USER107.VIEW_POSTS';
-        let countResult = await con.execute(countSql, {}, { outFormat: oracledb.OUT_FORMAT_OBJECT });
-        const total = countResult.rows[0].CNT;
+        // 1. 전체 개수 조회
+        // DB에 존재하는 view_posts 뷰를 사용하도록 변경합니다.
+        let countSql = 'select count(*) as cnt from view_posts';
+        let countParams = {};
+        if (word) {
+            // 직관적인 검색을 위해 내용(content) 검색을 제외하고, 제목(title)에서만 검색되도록 변경합니다.
+            countSql += " where title like '%' || :word || '%'";
+            countParams.word = word;
+        }
+        let countResult = await con.execute(countSql, countParams, { outFormat: oracledb.OUT_FORMAT_OBJECT });
+        // 컬럼명 대소문자 차이로 인한 에러를 방지합니다.
+        const total = countResult.rows[0].CNT || countResult.rows[0].cnt || 0;
 
         // 2. 게시글 목록 조회
-        // 최신 글이 먼저 보이도록(내림차순 정렬) ORDER BY id DESC 구문을 먼저 실행하고,
-        // 정렬된 결과에 ROWNUM을 부여하도록 쿼리를 3중 서브쿼리로 수정합니다.
         let sql = `
             SELECT * FROM (
-                SELECT a.*, ROWNUM rn FROM (
-                    SELECT * FROM USER107.VIEW_POSTS ORDER BY id DESC
-                ) a WHERE ROWNUM <= :endRow
-            ) WHERE rn >= :startRow
+                SELECT a.*, ROWNUM rnum FROM (
+                    SELECT * FROM view_posts
         `;
-        let result = await con.execute(sql, { startRow, endRow }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
+        if (word) {
+            sql += " WHERE title LIKE '%' || :word || '%'";
+        }
+        sql += ` ORDER BY id DESC
+                ) a WHERE ROWNUM <= :endRow
+            ) WHERE rnum >= :startRow
+        `;
         
-        // 순환 참조 에러를 완벽하게 방지하기 위한 안전 변환 처리
-        const getCircularReplacer = () => {
-            const seen = new WeakSet();
-            return (key, value) => {
-                if (typeof value === "object" && value !== null) {
-                    if (seen.has(value)) return; // 순환 참조(부모를 다시 참조하는 부분) 무시
-                    seen.add(value);
-                }
-                return value;
-            };
-        };
-        const rawList = JSON.parse(JSON.stringify(result.rows, getCircularReplacer()));
+        let queryParams = { startRow, endRow };
+        if (word) {
+            queryParams.word = word;
+        }
+        let result = await con.execute(sql, queryParams, { outFormat: oracledb.OUT_FORMAT_OBJECT });
         
-        // 콘솔 출력 예시와 동일한 키(key) 이름으로 매핑
-        const list = rawList.map(item => {
-            const rn = item.rn || item.RN || 1;
+        // 불필요한 JSON 변환(getCircularReplacer)을 제거하고, 데이터를 안전하게 바로 매핑합니다.
+        const list = result.rows.map(item => {
+            const rnum = item.RNUM || item.rnum || 1;
             
-            // 제목이 30자를 초과할 경우 말줄임표 처리
-            let title = item.TITLE || item.CONTENT || "제목 없음";
+            // 안전한 매핑 (소문자 프로퍼티 반환 대비)
+            let title = item.TITLE || item.title || item.CONTENT || item.content || "제목 없음";
             if (title.length > 30) title = title.substring(0, 30) + "...";
 
             return {
-                ID: item.ID || rn || 0,
-                REG_DATE: item.FMT_DATE || "", // 뷰에서 생성한 FMT_DATE 컬럼을 사용해 작성일 표시
-                RNUM: total - rn + 1, // 전체 개수에서 현재 순번을 빼서 아래부터 오름차순으로 번호 부여
-                SNAME: item.SNAME,
+                ID: item.ID || item.id || 0,
+                REG_DATE: item.FMT_DATE || item.fmt_date || "", 
+                RNUM: total - rnum + 1, // 전체 개수에서 현재 순번을 빼서 아래부터 오름차순으로 번호 부여
+                SNAME: item.SNAME || item.sname,
                 TITLE: title,
-                WRITER: item.WRITER, // 뷰에 있는 WRITER 컬럼 매핑
-                CONTENT: item.CONTENT
+                WRITER: item.WRITER || item.writer, 
+                CONTENT: item.CONTENT || item.content
             };
         });
         
         res.send({ list, total });
     } catch (err) {
         console.error("데이터 조회 에러:", err);
-        res.status(500).send({ error: "데이터 조회 중 오류가 발생했습니다." });
+        // 프론트엔드에서도 에러 원인을 쉽게 파악할 수 있도록 메시지 추가
+        res.status(500).send({ error: "오류 상세: " + err.message });
     } finally {
         if (con) await con.close();
     }
